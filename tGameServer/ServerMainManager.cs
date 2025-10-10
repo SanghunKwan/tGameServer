@@ -41,6 +41,7 @@ namespace tGameServer
         void ReadyServer()
         {
             _netMain.InitNetwork();
+            _netMain.SubThreadStart();
         }
     }
 }

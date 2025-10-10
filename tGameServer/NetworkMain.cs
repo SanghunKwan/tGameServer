@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Runtime.InteropServices;
+using tGameServer.NetworkDefine;
 
 
 namespace tGameServer
@@ -59,6 +60,17 @@ namespace tGameServer
         public void InitNetwork()
         {
             StartListening("127.0.0.1", _port);
+        }
+        public void SubThreadStart()
+        {
+            TestJoin();
+            TestLogin();
+
+            //_sendGameThread.Start();
+            //_receiveGameThread.Start();
+            _sendDBMSThread.Start();
+            //_receiveDBMSThread.Start();
+
         }
         #region [ServerNdbms]
         public bool ConnectDBMS(string ip, int port)
@@ -192,7 +204,10 @@ namespace tGameServer
             while (!_isQuit)
             {
                 if (_receiveGameQueue.Count > 0)
-                { }
+                {
+
+
+                }
             }
         }
         void SendDBMSLoop()
@@ -200,7 +215,24 @@ namespace tGameServer
             while (!_isQuit)
             {
                 if (_sendDBMSQueue.Count > 0)
-                { }
+                {
+                    Packet pack = _sendDBMSQueue.Dequeue();
+
+                    switch ((SProtocol.Send)pack._protocol)
+                    {
+                        case SProtocol.Send.Join_User:
+                            byte[] bytes = ConverterPack.StructureToByteArray(pack);
+                            _socketDB.Send(bytes);
+                            break;
+
+                        case SProtocol.Send.Login_User:
+                            bytes = ConverterPack.StructureToByteArray(pack);
+                            _socketDB.Send(bytes);
+                            break;
+
+                    }
+
+                }
             }
         }
         void ReceiveDBMSLoop()
@@ -208,9 +240,65 @@ namespace tGameServer
             while (!_isQuit)
             {
                 if (_receiveDBMSQueue.Count > 0)
-                { }
+                {
+                    Packet pack = _receiveDBMSQueue.Dequeue();
+
+                    switch ((SProtocol.Receive)pack._protocol)
+                    {
+                        case SProtocol.Receive.DBConnect_Success:
+                            Console.WriteLine("접속 성공");
+                            break;
+
+                        case SProtocol.Receive.Join_Success:
+                            Console.WriteLine("join 성공");
+                            break;
+
+                        case SProtocol.Receive.Join_Failed:
+                            Console.WriteLine("join 실패");
+                            break;
+
+                        case SProtocol.Receive.Login_Success:
+                            Console.WriteLine("login 성공");
+                            break;
+
+                        case SProtocol.Receive.Login_Failed:
+                            Console.WriteLine("login 실패");
+                            break;
+                    }
+
+                }
             }
         }
         #endregion [Thread]
+
+
+        //임시
+        void TestJoin()
+        {
+            Packet_Join packetJoin;
+            packetJoin._id = "asdf";
+            packetJoin._pw = "zxcv";
+            packetJoin._clearStage = 0;
+            packetJoin._gold = 1000;
+            packetJoin._name = "qwer";
+
+            byte[] bytes = ConverterPack.StructureToByteArray(packetJoin);
+            Packet pack = ConverterPack.CreatePack((uint)SProtocol.Send.Join_User, (uint)bytes.Length, bytes);
+            _sendDBMSQueue.Enqueue(pack);
+        }
+
+        void TestLogin()
+        {
+            Packet_Login packetLogin;
+            packetLogin._id = "asdf";
+            packetLogin._pw = "zxcv";
+
+            byte[] bytes = ConverterPack.StructureToByteArray(packetLogin);
+
+            Packet pack = ConverterPack.CreatePack((uint)SProtocol.Send.Login_User, (uint)bytes.Length, bytes);
+            _sendDBMSQueue.Enqueue(pack);
+        }
+
+        //==
     }
 }

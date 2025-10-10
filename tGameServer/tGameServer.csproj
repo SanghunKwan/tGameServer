@@ -43,10 +43,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConverterPack.cs" />
     <Compile Include="NetworkMain.cs" />
-    <Compile Include="PacketStruct.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Protocols.cs" />
     <Compile Include="ServerMainManager.cs" />
     <Compile Include="tSocketC.cs" />
   </ItemGroup>
