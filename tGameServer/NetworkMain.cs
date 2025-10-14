@@ -66,10 +66,10 @@ namespace tGameServer
             TestJoin();
             TestLogin();
 
-            //_sendGameThread.Start();
-            //_receiveGameThread.Start();
+            _sendGameThread.Start();
+            _receiveGameThread.Start();
             _sendDBMSThread.Start();
-            //_receiveDBMSThread.Start();
+            _receiveDBMSThread.Start();
 
         }
         #region [ServerNdbms]
@@ -162,7 +162,25 @@ namespace tGameServer
             //DB 먼저
             if (_socketDB != null && _socketDB.Poll(0, SelectMode.SelectRead))
             {
-                //버퍼로 받아서 packet으로 변환하여 receive에 전달.
+                try
+                {
+                    //버퍼로 받아서 packet으로 변환하여 receive에 전달.
+                    byte[] buffer = new byte[1024];
+                    int receiveLength = _socketDB.Receive(buffer);
+                    if (receiveLength > 0)
+                    {
+                        Packet receive = (Packet)ConverterPack.ByteArrayToStructure(buffer, typeof(Packet), receiveLength);
+                        _receiveDBMSQueue.Enqueue(receive);
+                    }
+                    else
+                    {
+
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("오류 : {0}", ex.ToString());
+                }
             }
             //client 나중
             for (int i = 0; i < _clientList.Count; i++)
@@ -254,7 +272,8 @@ namespace tGameServer
                             break;
 
                         case SProtocol.Receive.Join_Failed:
-                            Console.WriteLine("join 실패");
+                            Packet_Std_Failed failedData = (Packet_Std_Failed)ConverterPack.ByteArrayToStructure(pack._data, typeof(Packet_Std_Failed), (int)pack._totalSize);
+                            Console.WriteLine("join 실패,{0}", failedData._errorCord);
                             break;
 
                         case SProtocol.Receive.Login_Success:
