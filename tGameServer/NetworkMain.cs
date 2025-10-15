@@ -65,6 +65,7 @@ namespace tGameServer
         {
             TestJoin();
             TestLogin();
+            TestCheckId();
 
             _sendGameThread.Start();
             _receiveGameThread.Start();
@@ -236,19 +237,8 @@ namespace tGameServer
                 {
                     Packet pack = _sendDBMSQueue.Dequeue();
 
-                    switch ((SProtocol.Send)pack._protocol)
-                    {
-                        case SProtocol.Send.Join_User:
-                            byte[] bytes = ConverterPack.StructureToByteArray(pack);
-                            _socketDB.Send(bytes);
-                            break;
-
-                        case SProtocol.Send.Login_User:
-                            bytes = ConverterPack.StructureToByteArray(pack);
-                            _socketDB.Send(bytes);
-                            break;
-
-                    }
+                    byte[] bytes = ConverterPack.StructureToByteArray(pack);
+                    _socketDB.Send(bytes);
 
                 }
             }
@@ -283,6 +273,14 @@ namespace tGameServer
                         case SProtocol.Receive.Login_Failed:
                             Console.WriteLine("login 실패");
                             break;
+
+                        case SProtocol.Receive.CheckId_Success:
+                            Console.WriteLine("아이디 확인");
+                            break;
+
+                        case SProtocol.Receive.CheckId_Failed:
+                            Console.WriteLine("존재하지 않는 아이디");
+                            break;
                     }
 
                 }
@@ -315,6 +313,17 @@ namespace tGameServer
             byte[] bytes = ConverterPack.StructureToByteArray(packetLogin);
 
             Packet pack = ConverterPack.CreatePack((uint)SProtocol.Send.Login_User, (uint)bytes.Length, bytes);
+            _sendDBMSQueue.Enqueue(pack);
+        }
+        void TestCheckId()
+        {
+            Packet_Login packetLogin;
+            packetLogin._id = "zxcv";
+            packetLogin._pw = string.Empty;
+
+            byte[] bytes = ConverterPack.StructureToByteArray(packetLogin);
+
+            Packet pack = ConverterPack.CreatePack((uint)SProtocol.Send.CheckId_User, (uint)bytes.Length, bytes);
             _sendDBMSQueue.Enqueue(pack);
         }
 

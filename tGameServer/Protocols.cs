@@ -71,13 +71,18 @@ namespace tGameServer.NetworkDefine
             Login_Success,
             Login_Failed,
 
+            CheckId_Success,
+            CheckId_Failed,
+
             End
         }
         public enum Receive
         {
             Join_User,
 
-            Login_User
+            Login_User,
+
+            CheckId_User
         }
     }
     #endregion [DB프로토콜]
@@ -89,7 +94,9 @@ namespace tGameServer.NetworkDefine
         {
             Join_User = 0,
 
-            Login_User
+            Login_User,
+
+            CheckId_User
         }
         public enum Receive
         {
@@ -100,6 +107,9 @@ namespace tGameServer.NetworkDefine
 
             Login_Success,
             Login_Failed,
+
+            CheckId_Success,
+            CheckId_Failed,
 
             End
         }
