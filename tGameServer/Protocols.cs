@@ -56,6 +56,26 @@ namespace tGameServer.NetworkDefine
         [MarshalAs(UnmanagedType.U8)]
         public ulong _gold;
     }
+    public struct Packet_UserData
+    {
+        [MarshalAs(UnmanagedType.U8)]
+        public ulong _uuid;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 20)]
+        public string _id;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 30)]
+        public string _pw;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 20)]
+        public string _name;
+        [MarshalAs(UnmanagedType.U4)]
+        public uint _clearStage;
+        [MarshalAs(UnmanagedType.U8)]
+        public ulong _gold;
+    }
+    public struct Packet_DuplicationId
+    {
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 20)]
+        public string _id;
+    }
     #endregion [패킷구조체]
 
     #region [DB프로토콜]
@@ -63,7 +83,7 @@ namespace tGameServer.NetworkDefine
     {
         public enum Send
         {
-            DBConnect_Success = 0,
+            DBConnect_Success               = 0,
 
             Join_Success,
             Join_Failed,
@@ -92,15 +112,25 @@ namespace tGameServer.NetworkDefine
     {
         public enum Send
         {
-            Join_User = 0,
-
+            Join_User                       = 0,
             Login_User,
 
-            CheckId_User
+            CheckId_User,
+
+
+            Client_Connect_Success          = 200,
+            
+            Client_Join_Success,
+            Client_Join_Failed,
+            
+            Client_Login_Success,
+            Client_Login_Failed,
+
+            End
         }
         public enum Receive
         {
-            DBConnect_Success = 0,
+            DBConnect_Success               = 0,
 
             Join_Success,
             Join_Failed,
@@ -110,6 +140,12 @@ namespace tGameServer.NetworkDefine
 
             CheckId_Success,
             CheckId_Failed,
+
+
+            Client_Join                     = 200,
+            Client_Login,
+
+            Client_CheckIdDuplication,
 
             End
         }

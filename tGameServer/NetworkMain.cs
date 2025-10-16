@@ -200,7 +200,7 @@ namespace tGameServer
                     if (stream.DataAvailable)
                     {
                         byte[] buffer = new byte[1024];
-                        stream.BeginRead(buffer, 0, buffer.Length, ReceiveCallBack, stream);
+                        stream.BeginRead(buffer, 0, buffer.Length, ReceiveCallBack, client);
 
                         //변환...
                     }
@@ -224,7 +224,23 @@ namespace tGameServer
             {
                 if (_receiveGameQueue.Count > 0)
                 {
+                    Packet pack = _receiveGameQueue.Dequeue();
 
+                    switch ((SProtocol.Receive)pack._protocol)
+                    {
+                        case SProtocol.Receive.Client_Join:
+
+                            break;
+
+                        case SProtocol.Receive.Client_Login:
+                            break;
+
+                        case SProtocol.Receive.Client_CheckIdDuplication:
+                            Packet sendPack = ConverterPack.CreatePack((uint)SProtocol.Send.CheckId_User, pack._totalSize, pack._data);
+                            _sendDBMSQueue.Enqueue(sendPack);
+                            Console.WriteLine("체크 수령");
+                            break;
+                    }
 
                 }
             }
@@ -317,9 +333,8 @@ namespace tGameServer
         }
         void TestCheckId()
         {
-            Packet_Login packetLogin;
+            Packet_DuplicationId packetLogin;
             packetLogin._id = "zxcv";
-            packetLogin._pw = string.Empty;
 
             byte[] bytes = ConverterPack.StructureToByteArray(packetLogin);
 
