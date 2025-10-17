@@ -10,7 +10,7 @@ namespace tGameServer
     internal class ServerMainManager
     {
         string _dbTableName = "userinfodata";
-        long _stdUUID = 10000000000000000;
+        ulong _stdUUID = 10000000000000000;
 
 
         NetworkMain _netMain;

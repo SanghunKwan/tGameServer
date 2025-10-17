@@ -15,7 +15,7 @@ namespace tGameServer.NetworkDefine
         public uint _protocol;
         [MarshalAs(UnmanagedType.U4)]
         public uint _totalSize;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1016)]
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1008)]
         public byte[] _data;
     }
     [StructLayout(LayoutKind.Sequential)]
@@ -56,6 +56,7 @@ namespace tGameServer.NetworkDefine
         [MarshalAs(UnmanagedType.U8)]
         public ulong _gold;
     }
+    [StructLayout(LayoutKind.Sequential)]
     public struct Packet_UserData
     {
         [MarshalAs(UnmanagedType.U8)]
@@ -71,10 +72,23 @@ namespace tGameServer.NetworkDefine
         [MarshalAs(UnmanagedType.U8)]
         public ulong _gold;
     }
+    [StructLayout(LayoutKind.Sequential)]
     public struct Packet_DuplicationId
     {
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 20)]
         public string _id;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Packet_uuid
+    {
+        [MarshalAs(UnmanagedType.U4)]
+        public uint _protocol;
+        [MarshalAs(UnmanagedType.U4)]
+        public uint _totalSize;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1008)]
+        public byte[] _data;
+        [MarshalAs(UnmanagedType.U8)]
+        public ulong _uuid;
     }
     #endregion [패킷구조체]
 
@@ -125,6 +139,9 @@ namespace tGameServer.NetworkDefine
             
             Client_Login_Success,
             Client_Login_Failed,
+
+            Client_Depulication_True,
+            Client_Depulication_False,
 
             End
         }

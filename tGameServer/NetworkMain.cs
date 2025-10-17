@@ -17,16 +17,16 @@ namespace tGameServer
         short _port;
         Socket _socketDB;
         TcpListener _socketListen;
-        long _nowUUID;
+        ulong _nowUUID;
         bool _isQuit;
 
 
         List<tSocketC> _clientList;
         List<tSocketC> _disconnectList;
-        Queue<Packet> _sendGameQueue;
-        Queue<Packet> _receiveGameQueue;
-        Queue<Packet> _sendDBMSQueue;
-        Queue<Packet> _receiveDBMSQueue;
+        Queue<Packet_uuid> _sendGameQueue;
+        Queue<Packet_uuid> _receiveGameQueue;
+        Queue<Packet_uuid> _sendDBMSQueue;
+        Queue<Packet_uuid> _receiveDBMSQueue;
 
         Thread _sendGameThread;
         Thread _receiveGameThread;
@@ -38,7 +38,7 @@ namespace tGameServer
 
 
 
-        public NetworkMain(short port, long startID)
+        public NetworkMain(short port, ulong startID)
         {
             _port = port;
             _nowUUID = startID;
@@ -46,10 +46,10 @@ namespace tGameServer
             _clientList = new List<tSocketC>();
             _disconnectList = new List<tSocketC>();
 
-            _sendGameQueue = new Queue<Packet>();
-            _receiveGameQueue = new Queue<Packet>();
-            _sendDBMSQueue = new Queue<Packet>();
-            _receiveDBMSQueue = new Queue<Packet>();
+            _sendGameQueue = new Queue<Packet_uuid>();
+            _receiveGameQueue = new Queue<Packet_uuid>();
+            _sendDBMSQueue = new Queue<Packet_uuid>();
+            _receiveDBMSQueue = new Queue<Packet_uuid>();
 
             _sendGameThread = new Thread(SendGameLoop);
             _receiveGameThread = new Thread(ReceiveGameLoop);
@@ -64,8 +64,8 @@ namespace tGameServer
         public void SubThreadStart()
         {
             TestJoin();
-            TestLogin();
-            TestCheckId();
+            //TestLogin();
+            //TestCheckId();
 
             _sendGameThread.Start();
             _receiveGameThread.Start();
@@ -142,6 +142,7 @@ namespace tGameServer
             NetworkStream stream = client.GetStream();
 
             stream.EndRead(iAr);
+
         }
         #endregion [serverNClient]
 
@@ -170,7 +171,7 @@ namespace tGameServer
                     int receiveLength = _socketDB.Receive(buffer);
                     if (receiveLength > 0)
                     {
-                        Packet receive = (Packet)ConverterPack.ByteArrayToStructure(buffer, typeof(Packet), receiveLength);
+                        Packet_uuid receive = (Packet_uuid)ConverterPack.ByteArrayToStructure(buffer, typeof(Packet_uuid), receiveLength);
                         _receiveDBMSQueue.Enqueue(receive);
                     }
                     else
@@ -200,9 +201,25 @@ namespace tGameServer
                     if (stream.DataAvailable)
                     {
                         byte[] buffer = new byte[1024];
-                        stream.BeginRead(buffer, 0, buffer.Length, ReceiveCallBack, client);
+                        int receiveLength = stream.Read(buffer, 0, buffer.Length);
+                        if (receiveLength > 0)
+                        {
+                            Packet pack = (Packet)ConverterPack.ByteArrayToStructure(buffer, typeof(Packet), receiveLength);
+
+                            Packet_uuid packUuid;
+                            packUuid._uuid = client._uuid;
+                            packUuid._protocol = pack._protocol;
+                            packUuid._totalSize = pack._totalSize;
+                            packUuid._data = pack._data;
+
+                            _receiveGameQueue.Enqueue(packUuid);
+                        }
+
+                        //IAsyncResult result = stream.BeginRead(buffer, 0, buffer.Length, ReceiveCallBack, client._client);
 
                         //변환...
+                        //Packet pack = (Packet)ConverterPack.ByteArrayToStructure(buffer, typeof(Packet), 1024);
+
                     }
                 }
             }
@@ -215,7 +232,21 @@ namespace tGameServer
             while (!_isQuit)
             {
                 if (_sendGameQueue.Count > 0)
-                { }
+                {
+                    Packet_uuid packUuid = _sendGameQueue.Dequeue();
+
+                    for (int i = 0; i < _clientList.Count; i++)
+                    {
+                        if (_clientList[i]._uuid == packUuid._uuid)
+                        {
+                            Packet pack = ConverterPack.CreatePack(packUuid._protocol, packUuid._totalSize, packUuid._data);
+
+                            byte[] bytes = ConverterPack.StructureToByteArray(pack);
+                            _clientList[i]._client.Client.Send(bytes);
+                            break;
+                        }
+                    }
+                }
             }
         }
         void ReceiveGameLoop()
@@ -224,9 +255,9 @@ namespace tGameServer
             {
                 if (_receiveGameQueue.Count > 0)
                 {
-                    Packet pack = _receiveGameQueue.Dequeue();
+                    Packet_uuid packUuid = _receiveGameQueue.Dequeue();
 
-                    switch ((SProtocol.Receive)pack._protocol)
+                    switch ((SProtocol.Receive)packUuid._protocol)
                     {
                         case SProtocol.Receive.Client_Join:
 
@@ -236,9 +267,11 @@ namespace tGameServer
                             break;
 
                         case SProtocol.Receive.Client_CheckIdDuplication:
-                            Packet sendPack = ConverterPack.CreatePack((uint)SProtocol.Send.CheckId_User, pack._totalSize, pack._data);
-                            _sendDBMSQueue.Enqueue(sendPack);
-                            Console.WriteLine("체크 수령");
+
+                            Packet sendPack = ConverterPack.CreatePack((uint)SProtocol.Send.CheckId_User, packUuid._totalSize, packUuid._data);
+                            packUuid._protocol = sendPack._protocol;
+                            _sendDBMSQueue.Enqueue(packUuid);
+                            Console.WriteLine("클라이언트에서 아이디 존재 확인 요청");
                             break;
                     }
 
@@ -251,7 +284,7 @@ namespace tGameServer
             {
                 if (_sendDBMSQueue.Count > 0)
                 {
-                    Packet pack = _sendDBMSQueue.Dequeue();
+                    Packet_uuid pack = _sendDBMSQueue.Dequeue();
 
                     byte[] bytes = ConverterPack.StructureToByteArray(pack);
                     _socketDB.Send(bytes);
@@ -265,7 +298,7 @@ namespace tGameServer
             {
                 if (_receiveDBMSQueue.Count > 0)
                 {
-                    Packet pack = _receiveDBMSQueue.Dequeue();
+                    Packet_uuid pack = _receiveDBMSQueue.Dequeue();
 
                     switch ((SProtocol.Receive)pack._protocol)
                     {
@@ -291,10 +324,16 @@ namespace tGameServer
                             break;
 
                         case SProtocol.Receive.CheckId_Success:
-                            Console.WriteLine("아이디 확인");
+                            Packet depulicationTruePack = ConverterPack.CreatePack((uint)SProtocol.Send.Client_Depulication_True, 0, null);
+                            pack._protocol = depulicationTruePack._protocol;
+                            _sendGameQueue.Enqueue(pack);
+                            Console.WriteLine("아이디 존재 확인");
                             break;
 
                         case SProtocol.Receive.CheckId_Failed:
+                            Packet depulicationFalsePack = ConverterPack.CreatePack((uint)SProtocol.Send.Client_Depulication_False, 0, null);
+                            pack._protocol = depulicationFalsePack._protocol;
+                            _sendGameQueue.Enqueue(pack);
                             Console.WriteLine("존재하지 않는 아이디");
                             break;
                     }
@@ -316,8 +355,12 @@ namespace tGameServer
             packetJoin._name = "qwer";
 
             byte[] bytes = ConverterPack.StructureToByteArray(packetJoin);
-            Packet pack = ConverterPack.CreatePack((uint)SProtocol.Send.Join_User, (uint)bytes.Length, bytes);
-            _sendDBMSQueue.Enqueue(pack);
+            Packet_uuid packUuid;
+            packUuid._uuid = 10000000000000000;
+            packUuid._protocol = (uint)SProtocol.Send.Join_User;
+            packUuid._totalSize = (uint)bytes.Length;
+            packUuid._data = bytes;
+            _sendDBMSQueue.Enqueue(packUuid);
         }
 
         void TestLogin()
@@ -328,8 +371,12 @@ namespace tGameServer
 
             byte[] bytes = ConverterPack.StructureToByteArray(packetLogin);
 
-            Packet pack = ConverterPack.CreatePack((uint)SProtocol.Send.Login_User, (uint)bytes.Length, bytes);
-            _sendDBMSQueue.Enqueue(pack);
+            Packet_uuid packUuid;
+            packUuid._uuid = 10000000000000000;
+            packUuid._protocol = (uint)SProtocol.Send.Login_User;
+            packUuid._totalSize = (uint)bytes.Length;
+            packUuid._data = bytes;
+            _sendDBMSQueue.Enqueue(packUuid);
         }
         void TestCheckId()
         {
@@ -338,8 +385,12 @@ namespace tGameServer
 
             byte[] bytes = ConverterPack.StructureToByteArray(packetLogin);
 
-            Packet pack = ConverterPack.CreatePack((uint)SProtocol.Send.CheckId_User, (uint)bytes.Length, bytes);
-            _sendDBMSQueue.Enqueue(pack);
+            Packet_uuid packUuid;
+            packUuid._uuid = 10000000000000000;
+            packUuid._protocol = (uint)SProtocol.Send.CheckId_User;
+            packUuid._totalSize = (uint)bytes.Length;
+            packUuid._data = bytes;
+            _sendDBMSQueue.Enqueue(packUuid);
         }
 
         //==

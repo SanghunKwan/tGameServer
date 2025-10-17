@@ -13,9 +13,9 @@ namespace tGameServer
     internal class tSocketC
     {
         public TcpClient _client;
-        public long _uuid;
+        public ulong _uuid;
 
-        public tSocketC(TcpClient socket, long id)
+        public tSocketC(TcpClient socket, ulong id)
         {
             _client = socket;
             _uuid = id;
