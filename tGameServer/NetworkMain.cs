@@ -64,8 +64,8 @@ namespace tGameServer
         public void SubThreadStart()
         {
             TestJoin();
-            //TestLogin();
-            //TestCheckId();
+            TestLogin();
+            TestCheckId();
 
             _sendGameThread.Start();
             _receiveGameThread.Start();
@@ -202,16 +202,17 @@ namespace tGameServer
                     {
                         byte[] buffer = new byte[1024];
                         int receiveLength = stream.Read(buffer, 0, buffer.Length);
+                        Console.WriteLine("클라 읽음");
                         if (receiveLength > 0)
                         {
                             Packet pack = (Packet)ConverterPack.ByteArrayToStructure(buffer, typeof(Packet), receiveLength);
-
                             Packet_uuid packUuid;
                             packUuid._uuid = client._uuid;
                             packUuid._protocol = pack._protocol;
                             packUuid._totalSize = pack._totalSize;
-                            packUuid._data = pack._data;
-
+                            packUuid._data = new byte[1008];
+                            Array.Copy(pack._data, packUuid._data, packUuid._data.Length);
+                            Console.WriteLine("클라이언트에서 옴");
                             _receiveGameQueue.Enqueue(packUuid);
                         }
 
@@ -324,14 +325,14 @@ namespace tGameServer
                             break;
 
                         case SProtocol.Receive.CheckId_Success:
-                            Packet depulicationTruePack = ConverterPack.CreatePack((uint)SProtocol.Send.Client_Depulication_True, 0, null);
+                            Packet depulicationTruePack = ConverterPack.CreatePack((uint)SProtocol.Send.Client_Depulication_True, 0, new byte[0]);
                             pack._protocol = depulicationTruePack._protocol;
                             _sendGameQueue.Enqueue(pack);
                             Console.WriteLine("아이디 존재 확인");
                             break;
 
                         case SProtocol.Receive.CheckId_Failed:
-                            Packet depulicationFalsePack = ConverterPack.CreatePack((uint)SProtocol.Send.Client_Depulication_False, 0, null);
+                            Packet depulicationFalsePack = ConverterPack.CreatePack((uint)SProtocol.Send.Client_Depulication_False, 0, new byte[0]);
                             pack._protocol = depulicationFalsePack._protocol;
                             _sendGameQueue.Enqueue(pack);
                             Console.WriteLine("존재하지 않는 아이디");
@@ -359,7 +360,8 @@ namespace tGameServer
             packUuid._uuid = 10000000000000000;
             packUuid._protocol = (uint)SProtocol.Send.Join_User;
             packUuid._totalSize = (uint)bytes.Length;
-            packUuid._data = bytes;
+            packUuid._data = new byte[1008];
+            Array.Copy(bytes, packUuid._data, bytes.Length);
             _sendDBMSQueue.Enqueue(packUuid);
         }
 
@@ -375,7 +377,8 @@ namespace tGameServer
             packUuid._uuid = 10000000000000000;
             packUuid._protocol = (uint)SProtocol.Send.Login_User;
             packUuid._totalSize = (uint)bytes.Length;
-            packUuid._data = bytes;
+            packUuid._data = new byte[1008];
+            Array.Copy(bytes, packUuid._data, bytes.Length);
             _sendDBMSQueue.Enqueue(packUuid);
         }
         void TestCheckId()
@@ -389,7 +392,8 @@ namespace tGameServer
             packUuid._uuid = 10000000000000000;
             packUuid._protocol = (uint)SProtocol.Send.CheckId_User;
             packUuid._totalSize = (uint)bytes.Length;
-            packUuid._data = bytes;
+            packUuid._data = new byte[1008];
+            Array.Copy(bytes, packUuid._data, bytes.Length);
             _sendDBMSQueue.Enqueue(packUuid);
         }
 

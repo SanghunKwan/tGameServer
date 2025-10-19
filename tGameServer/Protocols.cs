@@ -15,7 +15,7 @@ namespace tGameServer.NetworkDefine
         public uint _protocol;
         [MarshalAs(UnmanagedType.U4)]
         public uint _totalSize;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1008)]
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1016)]
         public byte[] _data;
     }
     [StructLayout(LayoutKind.Sequential)]
