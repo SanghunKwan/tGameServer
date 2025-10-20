@@ -59,18 +59,12 @@ namespace tGameServer.NetworkDefine
     [StructLayout(LayoutKind.Sequential)]
     public struct Packet_UserData
     {
-        [MarshalAs(UnmanagedType.U8)]
-        public ulong _uuid;
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 20)]
         public string _id;
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 30)]
         public string _pw;
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 20)]
         public string _name;
-        [MarshalAs(UnmanagedType.U4)]
-        public uint _clearStage;
-        [MarshalAs(UnmanagedType.U8)]
-        public ulong _gold;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct Packet_DuplicationId

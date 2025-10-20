@@ -260,19 +260,45 @@ namespace tGameServer
 
                     switch ((SProtocol.Receive)packUuid._protocol)
                     {
-                        case SProtocol.Receive.Client_Join:
+                        case SProtocol.Receive.DBConnect_Success:
+                            packUuid._protocol = (uint)SProtocol.Send.Client_Connect_Success;
+                            packUuid._totalSize = 0;
+                            Array.Clear(packUuid._data, 0, packUuid._data.Length);
+                            _sendGameQueue.Enqueue(packUuid);
+                            break;
 
+                        case SProtocol.Receive.Client_Join:
+                            Packet_UserData userData = (Packet_UserData)ConverterPack.ByteArrayToStructure(packUuid._data, typeof(Packet_UserData), (int)packUuid._totalSize);
+
+                            Packet_Join packJoin;
+                            packJoin._id = userData._id;
+                            packJoin._pw = userData._pw;
+                            packJoin._name = userData._name;
+                            packJoin._gold = 1000;
+                            packJoin._clearStage = 0;
+
+                            byte[] data = ConverterPack.StructureToByteArray(packJoin);
+                            packUuid._protocol = (uint)SProtocol.Send.Join_User;
+                            packUuid._totalSize = (uint)data.Length;
+                            Array.Copy(data, packUuid._data, data.Length);
+                            int length = 1008 - data.Length;
+                            if (length >= 0)
+                                Array.Clear(packUuid._data, data.Length, length);
+
+                            _sendDBMSQueue.Enqueue(packUuid);
                             break;
 
                         case SProtocol.Receive.Client_Login:
+                            packUuid._protocol = (uint)SProtocol.Send.Login_User;
+                            _sendDBMSQueue.Enqueue(packUuid);
                             break;
 
                         case SProtocol.Receive.Client_CheckIdDuplication:
 
                             Packet sendPack = ConverterPack.CreatePack((uint)SProtocol.Send.CheckId_User, packUuid._totalSize, packUuid._data);
                             packUuid._protocol = sendPack._protocol;
-                            _sendDBMSQueue.Enqueue(packUuid);
                             Console.WriteLine("클라이언트에서 아이디 존재 확인 요청");
+                            _sendDBMSQueue.Enqueue(packUuid);
                             break;
                     }
 
@@ -309,18 +335,44 @@ namespace tGameServer
 
                         case SProtocol.Receive.Join_Success:
                             Console.WriteLine("join 성공");
+                            pack._protocol = (uint)SProtocol.Send.Client_Join_Success;
+                            Array.Clear(pack._data, 0, pack._data.Length);
+                            pack._totalSize = 0;
+                            _sendGameQueue.Enqueue(pack);
                             break;
 
                         case SProtocol.Receive.Join_Failed:
                             Packet_Std_Failed failedData = (Packet_Std_Failed)ConverterPack.ByteArrayToStructure(pack._data, typeof(Packet_Std_Failed), (int)pack._totalSize);
+                            pack._protocol = (uint)SProtocol.Send.Client_Join_Failed;
+                            byte[] data = ConverterPack.StructureToByteArray(failedData);
+                            pack._totalSize = (uint)data.Length;
+                            Array.Copy(data, pack._data, data.Length);
+                            int length = pack._data.Length - data.Length;
+                            if (length >= 0)
+                                Array.Clear(pack._data, data.Length, length);
+                            _sendGameQueue.Enqueue(pack);
                             Console.WriteLine("join 실패,{0}", failedData._errorCord);
                             break;
 
                         case SProtocol.Receive.Login_Success:
+                            pack._protocol = (uint)SProtocol.Send.Client_Login_Success;
+                            pack._totalSize = 0;
+                            Array.Clear(pack._data, 0, pack._data.Length);
+                            _sendGameQueue.Enqueue(pack);
                             Console.WriteLine("login 성공");
                             break;
 
                         case SProtocol.Receive.Login_Failed:
+                            failedData = (Packet_Std_Failed)ConverterPack.ByteArrayToStructure(pack._data, typeof(Packet_Std_Failed), (int)pack._totalSize);
+                            pack._protocol = (uint)SProtocol.Send.Client_Login_Failed;
+                            data = ConverterPack.StructureToByteArray(failedData);
+                            pack._totalSize = (uint)data.Length;
+                            Array.Copy(data, pack._data, data.Length);
+                            length = pack._data.Length - data.Length;
+                            if (length >= 0)
+                                Array.Clear(pack._data, data.Length, length);
+
+                            _sendGameQueue.Enqueue(pack);
                             Console.WriteLine("login 실패");
                             break;
 
